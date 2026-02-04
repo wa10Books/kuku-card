@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>むすこの九九カード</title>
+    <style>
+        :root { --main-color: #4A90E2; --accent-color: #ff6b6b; --bg-color: #f5f7fa; }
+        body { font-family: sans-serif; background: var(--bg-color); margin: 0; display: flex; flex-direction: column; align-items: center; touch-action: none; overflow: hidden; }
+        
+        #menu, #game, #result { width: 100%; max-width: 400px; height: 100vh; text-align: center; box-sizing: border-box; padding: 40px 20px 20px; display: flex; flex-direction: column; align-items: center; }
+        #game, #result { display: none; }
+
+        .btn-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 20px 0; width: 100%; }
+        button { padding: 15px; font-size: 1.2rem; border: none; border-radius: 12px; background: white; box-shadow: 0 4px 6px rgba(0,0,0,0.1); cursor: pointer; -webkit-tap-highlight-color: transparent; }
+        button.active { background: var(--main-color); color: white; }
+        .start-btn { width: 100%; background: var(--accent-color); color: white; font-weight: bold; font-size: 1.5rem; margin-top: 20px; padding: 20px; border-radius: 15px; }
+
+        .timer { font-size: 3rem; margin-bottom: 20px; font-weight: bold; color: #333; font-family: monospace; }
+        
+        /* 2Dベースのシンプルなカードデザイン */
+        .card-container { 
+            width: 320px; 
+            height: 220px; 
+            margin: 20px auto; 
+            position: relative;
+        }
+
+        .card { 
+            width: 100%; 
+            height: 100%; 
+            background: white;
+            border-radius: 25px;
+            border: 5px solid var(--main-color);
+            box-sizing: border-box;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 4.5rem;
+            box-shadow: 0 8px 15px rgba(0,0,0,0.08);
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        /* 解答表示時の色（クラスで制御） */
+        .card.is-answered {
+            color: var(--accent-color);
+            background: #fff5f5;
+            border-color: var(--accent-color);
+        }
+
+        /* 超軽量フェードアニメーション */
+        .fade-in { animation: fadeIn 0.2s ease-out forwards; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .fade-out { animation: fadeOut 0.15s ease-in forwards; }
+        @keyframes fadeOut {
+            from { opacity: 1; transform: scale(1); }
+            to { opacity: 0; transform: scale(0.95); }
+        }
+
+        .hint { color: #888; margin-top: 20px; font-size: 0.9rem; }
+    </style>
+</head>
+<body>
+
+    <div id="menu">
+        <h1 style="margin: 0 0 10px;">九九カード</h1>
+        <div class="btn-grid" id="dan-selector"></div>
+        <div style="margin: 10px 0; display: flex; gap: 5px; width: 100%;">
+            <button id="order-normal" class="active" onclick="setOrder('normal')" style="flex:1;">まえから</button>
+            <button id="order-reverse" onclick="setOrder('reverse')" style="flex:1;">うしろから</button>
+            <button id="order-random" onclick="setOrder('random')" style="flex:1;">ランダム</button>
+        </div>
+        <button class="start-btn" onclick="startGame()">スタート！</button>
+    </div>
+
+    <div id="game">
+        <div class="timer" id="timerDisplay">00.00</div>
+        <div class="card-container" id="swipable">
+            <div class="card" id="card"></div>
+        </div>
+        <div class="hint">タップでこたえ<br>横にスワイプで つぎへ</div>
+        <button onclick="location.reload()" style="margin-top: 40px; border:none; background:none; color:#aaa; text-decoration:underline;">やりなおす</button>
+    </div>
+
+    <div id="result">
+        <h2 style="margin-top: 60px;">おめでとう！</h2>
+        <div id="result-time" style="font-size:4rem; color:var(--accent-color); font-weight:bold;"></div>
+        <button class="start-btn" onclick="location.reload()">メニューにもどる</button>
+    </div>
+
+    <script>
+        let selectedDan = 2, order = 'normal', problems = [], currentIndex = 0, startTime, timerInterval, isAnswered = false;
+
+        const danSelector = document.getElementById('dan-selector');
+        for (let i = 1; i <= 9; i++) {
+            const btn = document.createElement('button');
+            btn.innerText = i + 'の段';
+            btn.className = (i === selectedDan) ? 'active' : '';
+            btn.onclick = () => {
+                document.querySelectorAll('#dan-selector button').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                selectedDan = i;
+            };
+            danSelector.appendChild(btn);
+        }
+
+        function setOrder(type) {
+            order = type;
+            document.querySelectorAll('#order-normal, #order-reverse, #order-random').forEach(b => b.classList.remove('active'));
+            document.getElementById(`order-${type}`).classList.add('active');
+        }
+
+        function startGame() {
+            problems = [];
+            for (let i = 1; i <= 9; i++) problems.push({ q: `${selectedDan} × ${i}`, a: selectedDan * i });
+            if (order === 'reverse') problems.reverse();
+            if (order === 'random') problems.sort(() => Math.random() - 0.5);
+            document.getElementById('menu').style.display = 'none';
+            document.getElementById('game').style.display = 'flex';
+            currentIndex = 0;
+            updateCard(true);
+            startTimer();
+        }
+
+        function updateCard(isFirst = false) {
+            if (currentIndex >= problems.length) { showResult(); return; }
+            
+            const card = document.getElementById('card');
+            isAnswered = false;
+
+            const setupNewProblem = () => {
+                card.classList.remove('fade-out', 'is-answered');
+                card.innerText = problems[currentIndex].q;
+                void card.offsetWidth; 
+                card.classList.add('fade-in');
+            };
+
+            if (isFirst) {
+                setupNewProblem();
+            } else {
+                card.classList.remove('fade-in');
+                card.classList.add('fade-out');
+                setTimeout(setupNewProblem, 150);
+            }
+        }
+
+        function startTimer() {
+            startTime = Date.now();
+            timerInterval = setInterval(() => {
+                document.getElementById('timerDisplay').innerText = ((Date.now() - startTime) / 1000).toFixed(2);
+            }, 50);
+        }
+
+        function showResult() {
+            clearInterval(timerInterval);
+            document.getElementById('game').style.display = 'none';
+            document.getElementById('result').style.display = 'flex';
+            document.getElementById('result-time').innerText = document.getElementById('timerDisplay').innerText + "秒";
+        }
+
+        let startX, isMoving = false;
+        document.addEventListener('touchstart', e => { startX = e.touches[0].pageX; isMoving = false; }, {passive: true});
+        document.addEventListener('touchmove', e => { if (Math.abs(e.touches[0].pageX - startX) > 10) isMoving = true; }, {passive: true});
+        document.addEventListener('touchend', e => {
+            if (document.getElementById('game').style.display !== 'flex') return;
+            
+            let diffX = startX - e.changedTouches[0].pageX;
+
+            if (isMoving && Math.abs(diffX) > 50) {
+                if (diffX > 0) currentIndex++; else if (currentIndex > 0) currentIndex--;
+                updateCard();
+            } else if (!isMoving) {
+                // タップで解答表示（2D切り替え）
+                const card = document.getElementById('card');
+                if (!isAnswered) {
+                    card.innerText = problems[currentIndex].a;
+                    card.classList.add('is-answered');
+                    isAnswered = true;
+                } else {
+                    card.innerText = problems[currentIndex].q;
+                    card.classList.remove('is-answered');
+                    isAnswered = false;
+                }
+            }
+        }, {passive: true});
+    </script>
+</body>
+</html>
