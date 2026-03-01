@@ -88,11 +88,10 @@
             aspect-ratio: 3 / 2;
             margin: 10px auto; 
             position: relative; 
-            cursor: pointer; 
             border-radius: 30px;
+            pointer-events: none; /* 下記のwindowイベントで処理するため無効化 */
         }
         
-        /* カード内の式：視認性重視の設定 */
         .card { 
             width: 100%; 
             height: 100%; 
@@ -103,9 +102,9 @@
             display: flex; 
             align-items: center; 
             justify-content: center; 
-            font-size: clamp(4.5rem, 18vw, 7.5rem); /* 少しだけサイズを抑えて余白を確保 */
-            font-weight: 700; /* 800から700へ：潰れを防止 */
-            letter-spacing: 0.05em; /* 文字間をわずかに広げて可読性アップ */
+            font-size: clamp(4.5rem, 18vw, 7.5rem); 
+            font-weight: 700; 
+            letter-spacing: 0.05em; 
             box-shadow: 0 10px 20px rgba(0,0,0,0.1); 
             position: absolute; 
             top: 0; left: 0; 
@@ -126,7 +125,7 @@
 <body>
 
     <div id="menu">
-        <h1 style="margin: 0 0 5px; color: var(--main-color);">九九カード</h1>
+        <h1 style="margin: 0 0 5px; color: var(--main-color);">九九魂</h1>
         <div class="mode-label">練習する段（複数えらべるよ）</div>
         <div class="btn-grid" id="dan-selector"></div>
         <div class="mode-label">ならびかた</div>
@@ -140,14 +139,14 @@
 
     <div id="game">
         <div class="timer" id="timerDisplay">00.00</div>
-        <div class="card-container" id="cardContainer" onclick="toggleAnswer()">
+        <div class="card-container" id="cardContainer">
             <div class="card" id="card"></div>
         </div>
         <div class="hint">
             PC：[←][→]キーで移動 / [Enter]で答え<br>
             スマホ：左右スワイプで移動 / タップで答え
         </div>
-        <button onclick="location.reload()" style="margin-top: 20px; border:none; background:none; color:#aaa; text-decoration:underline; cursor:pointer; font-size:0.9rem;">最初に戻る</button>
+        <button onclick="location.reload()" style="margin-top: 20px; border:none; background:none; color:#aaa; text-decoration:underline; cursor:pointer; font-size:0.9rem; z-index: 100; position: relative;">最初に戻る</button>
     </div>
 
     <div id="result">
@@ -233,6 +232,7 @@
             document.getElementById('result-time').innerText = document.getElementById('timerDisplay').innerText + "秒";
         }
 
+        // キーボード操作
         window.addEventListener('keydown', (e) => {
             if (document.getElementById('game').style.display !== 'flex') return;
             if (e.key === 'ArrowRight' || e.key === ' ') { nextCard(); }
@@ -240,15 +240,35 @@
             if (e.key === 'Enter') toggleAnswer();
         });
 
-        const container = document.getElementById('cardContainer');
+        // 画面全体でのタッチ操作
         let startX, isMoving = false;
-        container.addEventListener('touchstart', e => { startX = e.touches[0].pageX; isMoving = false; }, {passive: true});
-        container.addEventListener('touchmove', e => { if (Math.abs(e.touches[0].pageX - startX) > 10) isMoving = true; }, {passive: true});
-        container.addEventListener('touchend', e => {
+        window.addEventListener('touchstart', e => { 
             if (document.getElementById('game').style.display !== 'flex') return;
-            let diffX = startX - e.changedTouches[0].pageX;
-            if (isMoving && Math.abs(diffX) > 50) { if (diffX > 0) nextCard(); else prevCard(); }
+            if (e.target.tagName === 'BUTTON') return; // ボタン操作は除外
+            startX = e.touches[0].pageX; 
+            isMoving = false; 
         }, {passive: true});
+
+        window.addEventListener('touchmove', e => { 
+            if (document.getElementById('game').style.display !== 'flex') return;
+            if (Math.abs(e.touches[0].pageX - startX) > 10) isMoving = true; 
+        }, {passive: true});
+
+        window.addEventListener('touchend', e => {
+            if (document.getElementById('game').style.display !== 'flex') return;
+            if (e.target.tagName === 'BUTTON') return;
+
+            let diffX = startX - e.changedTouches[0].pageX;
+            // スワイプ判定
+            if (isMoving && Math.abs(diffX) > 50) { 
+                if (diffX > 0) nextCard(); else prevCard(); 
+            } 
+            // タップ判定（移動していなければ答え表示）
+            else if (!isMoving) { 
+                toggleAnswer(); 
+            }
+        }, {passive: true});
+
     </script>
 </body>
 </html>
