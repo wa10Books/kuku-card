@@ -126,7 +126,7 @@
 
     <div id="menu">
         <h1 style="margin: 0 0 5px; color: var(--main-color);">九九魂</h1>
-        <div class="mode-label">練習する段（複数えらべるよ）</div>
+        <div class="mode-label">段をえらぼう（いくつでもいいよ）</div>
         <div class="btn-grid" id="dan-selector"></div>
         <div class="mode-label">ならびかた</div>
         <div style="margin: 10px 0; display: flex; gap: 10px; width: 100%;">
@@ -143,8 +143,8 @@
             <div class="card" id="card"></div>
         </div>
         <div class="hint">
-            PC：[←][→]キーで移動 / [Enter]で答え<br>
-            スマホ：左右スワイプで移動 / タップで答え
+            PC：[←][→]キーでいどう / [Enter]でこたえ<br>
+            スマホ：左右スワイプでいどう / タップでこたえ
         </div>
         <button onclick="location.reload()" style="margin-top: 20px; border:none; background:none; color:#aaa; text-decoration:underline; cursor:pointer; font-size:0.9rem; z-index: 100; position: relative;">最初に戻る</button>
     </div>
@@ -180,7 +180,7 @@
         }
 
         function startGame() {
-            if (selectedDans.length === 0) { alert('練習したい段をえらんでね！'); return; }
+            if (selectedDans.length === 0) { alert('れんしゅうしたい段をえらんでね！'); return; }
             problems = [];
             selectedDans.sort((a,b) => a - b).forEach(dan => {
                 for (let i = 1; i <= 9; i++) { problems.push({ q: `${dan} × ${i}`, a: dan * i }); }
