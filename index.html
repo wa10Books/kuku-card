@@ -5,12 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>九九魂</title>
+    <title>九九カード Pro</title>
     <style>
         :root { --main-color: #4A90E2; --accent-color: #ff6b6b; --accent-hover: #ee5b5b; --bg-color: #f5f7fa; }
         
         body { 
-            font-family: -apple-system, "Helvetica Neue", "Hiragino Kaku Gothic ProN", "ヒラギノ角ゴ ProN W3", sans-serif; 
+            /* 数字が見やすいUDフォント・システムフォントを優先 */
+            font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', 'BIZ UDPGothic', Meiryo, sans-serif; 
             background: var(--bg-color); 
             margin: 0; 
             display: flex; 
@@ -58,11 +59,8 @@
             transition: all 0.1s; 
         }
         
-        /* ホバーエフェクトの定義 */
         @media (hover: hover) {
-            /* 通常ボタン（段選択など）のホバー：薄いグレー */
             button:hover:not(.active):not(.start-btn) { background: #e2e8f0; }
-            /* スタートボタンのホバー：濃い赤 */
             .start-btn:hover { background: var(--accent-hover); }
         }
 
@@ -82,7 +80,7 @@
         }
         .start-btn:active { transform: translateY(3px); box-shadow: none; }
 
-        .timer { font-size: 4rem; margin-bottom: 10px; font-weight: bold; color: #333; font-family: monospace; }
+        .timer { font-size: 1.8rem; margin-bottom: 5px; font-weight: 400; color: #aaa; font-family: 'Helvetica Neue', sans-serif; }
         
         .card-container { 
             width: 100%; 
@@ -94,6 +92,7 @@
             border-radius: 30px;
         }
         
+        /* カード内の式：視認性重視の設定 */
         .card { 
             width: 100%; 
             height: 100%; 
@@ -104,7 +103,9 @@
             display: flex; 
             align-items: center; 
             justify-content: center; 
-            font-size: clamp(4rem, 15vw, 7rem); 
+            font-size: clamp(4.5rem, 18vw, 7.5rem); /* 少しだけサイズを抑えて余白を確保 */
+            font-weight: 700; /* 800から700へ：潰れを防止 */
+            letter-spacing: 0.05em; /* 文字間をわずかに広げて可読性アップ */
             box-shadow: 0 10px 20px rgba(0,0,0,0.1); 
             position: absolute; 
             top: 0; left: 0; 
@@ -114,9 +115,9 @@
         .card.is-answered { color: var(--accent-color); background: #fff5f5; border-color: var(--accent-color); }
 
         .fade-in { animation: fadeIn 0.15s ease-out forwards; }
-        @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
         .fade-out { animation: fadeOut 0.1s ease-in forwards; }
-        @keyframes fadeOut { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: scale(0.95); } }
+        @keyframes fadeOut { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: scale(0.98); } }
 
         .hint { color: #888; margin-top: 15px; font-size: 0.9rem; line-height: 1.4; }
         .mode-label { font-size: 0.9rem; color: #666; align-self: flex-start; margin-top: 15px; font-weight: bold; }
