@@ -6,19 +6,18 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>九九魂</title>
-    
+
     <!--
     九九魂
     My first project as a mom.
     Named by my son with "がんばるきもち".
     2026
     --> 
-
+    
     <style>
         :root { --main-color: #4A90E2; --accent-color: #ff6b6b; --accent-hover: #ee5b5b; --bg-color: #f5f7fa; }
         
         body { 
-            /* 数字が見やすいUDフォント・システムフォントを優先 */
             font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', 'BIZ UDPGothic', Meiryo, sans-serif; 
             background: var(--bg-color); 
             margin: 0; 
@@ -44,6 +43,7 @@
             background: white;
             border-radius: 30px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+            position: relative; 
         }
 
         #game, #result { display: none; }
@@ -97,7 +97,7 @@
             margin: 10px auto; 
             position: relative; 
             border-radius: 30px;
-            pointer-events: none; /* 下記のwindowイベントで処理するため無効化 */
+            pointer-events: none;
         }
         
         .card { 
@@ -128,12 +128,37 @@
 
         .hint { color: #888; margin-top: 15px; font-size: 0.9rem; line-height: 1.4; }
         .mode-label { font-size: 0.9rem; color: #666; align-self: flex-start; margin-top: 15px; font-weight: bold; }
+
+        /* 控えめな通知のスタイル修正 */
+        #custom-toast {
+            visibility: hidden; /* display:noneではなくvisibilityで高さを確保 */
+            opacity: 0;
+            background: #444;
+            color: white;
+            padding: 6px 16px;
+            border-radius: 50px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            margin-bottom: -25px; /* 下の要素との距離を詰める */
+            transform: translateY(5px);
+            transition: all 0.3s;
+            z-index: 1000;
+        }
+        #custom-toast.show {
+            visibility: visible;
+            opacity: 1;
+            transform: translateY(0);
+        }
     </style>
 </head>
 <body>
 
     <div id="menu">
         <h1 style="margin: 0 0 5px; color: var(--main-color);">九九魂</h1>
+        
+        <div id="custom-toast">れんしゅうしたい段をえらんでね！</div>
+
         <div class="mode-label">段をえらぼう（いくつでもいいよ）</div>
         <div class="btn-grid" id="dan-selector"></div>
         <div class="mode-label">ならびかた</div>
@@ -142,6 +167,7 @@
             <button id="order-reverse" onclick="setOrder('reverse')" style="flex:1;">くだり</button>
             <button id="order-random" onclick="setOrder('random')" style="flex:1;">ランダム</button>
         </div>
+        
         <button class="start-btn" onclick="startGame()">スタート！</button>
     </div>
 
@@ -179,6 +205,7 @@
             const index = selectedDans.indexOf(dan);
             if (index === -1) { selectedDans.push(dan); btn.classList.add('active'); } 
             else { selectedDans.splice(index, 1); btn.classList.remove('active'); }
+            if (selectedDans.length > 0) document.getElementById('custom-toast').classList.remove('show');
         }
 
         function setOrder(type) {
@@ -187,8 +214,14 @@
             document.getElementById(`order-${type}`).classList.add('active');
         }
 
+        function showToast() {
+            const toast = document.getElementById('custom-toast');
+            toast.classList.add('show');
+            setTimeout(() => { toast.classList.remove('show'); }, 3000);
+        }
+
         function startGame() {
-            if (selectedDans.length === 0) { alert('れんしゅうしたい段をえらんでね！'); return; }
+            if (selectedDans.length === 0) { showToast(); return; }
             problems = [];
             selectedDans.sort((a,b) => a - b).forEach(dan => {
                 for (let i = 1; i <= 9; i++) { problems.push({ q: `${dan} × ${i}`, a: dan * i }); }
@@ -240,7 +273,6 @@
             document.getElementById('result-time').innerText = document.getElementById('timerDisplay').innerText + "秒";
         }
 
-        // キーボード操作
         window.addEventListener('keydown', (e) => {
             if (document.getElementById('game').style.display !== 'flex') return;
             if (e.key === 'ArrowRight' || e.key === ' ') { nextCard(); }
@@ -248,11 +280,10 @@
             if (e.key === 'Enter') toggleAnswer();
         });
 
-        // 画面全体でのタッチ操作
         let startX, isMoving = false;
         window.addEventListener('touchstart', e => { 
             if (document.getElementById('game').style.display !== 'flex') return;
-            if (e.target.tagName === 'BUTTON') return; // ボタン操作は除外
+            if (e.target.tagName === 'BUTTON') return;
             startX = e.touches[0].pageX; 
             isMoving = false; 
         }, {passive: true});
@@ -265,18 +296,14 @@
         window.addEventListener('touchend', e => {
             if (document.getElementById('game').style.display !== 'flex') return;
             if (e.target.tagName === 'BUTTON') return;
-
             let diffX = startX - e.changedTouches[0].pageX;
-            // スワイプ判定
             if (isMoving && Math.abs(diffX) > 50) { 
                 if (diffX > 0) nextCard(); else prevCard(); 
             } 
-            // タップ判定（移動していなければ答え表示）
             else if (!isMoving) { 
                 toggleAnswer(); 
             }
         }, {passive: true});
-
     </script>
 </body>
 </html>
